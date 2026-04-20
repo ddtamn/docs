@@ -1,0 +1,149 @@
+---
+title: "Get Started: Add Your First Svelte Audio Component"
+description: "Install your first Svelte Audio UI component using the shadcn-svelte CLI, set up AudioProvider, and render an audio player in minutes."
+---
+
+This guide walks you through adding Svelte Audio UI components to an existing Svelte 5 project using the shadcn-svelte CLI and registry system. The CLI copies component files directly into your project—nothing is installed as a runtime dependency.
+
+## Prerequisites
+
+Before you begin, make sure your project has:
+
+- A **Svelte 5 project** (SvelteKit is recommended for most use cases)
+- **Tailwind CSS v4** properly configured
+- **shadcn-svelte** initialized in your project
+
+If you haven't initialized shadcn-svelte yet, run the following command and follow the prompts:
+
+<CodeGroup>
+
+```bash pnpm
+pnpm dlx shadcn-svelte@latest init
+```
+
+```bash npm
+npx shadcn-svelte@latest init
+```
+
+```bash yarn
+npx shadcn-svelte@latest init
+```
+
+```bash bun
+bun x shadcn-svelte@latest init
+```
+
+</CodeGroup>
+
+## Adding and using your first component
+
+<Steps>
+  <Step title="Add the component via CLI">
+    Use the shadcn-svelte CLI to pull the Audio Player component from the Svelte Audio UI registry. Pass the component's registry URL directly to the `add` command:
+
+    <CodeGroup>
+
+    ```bash pnpm
+    pnpm dlx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/player.json
+    ```
+
+    ```bash npm
+    npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/player.json
+    ```
+
+    ```bash yarn
+    npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/player.json
+    ```
+
+    ```bash bun
+    bun x shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/player.json
+    ```
+
+    </CodeGroup>
+
+    This command copies the following into your project:
+
+    - The **`AudioPlayer`** component and its primitives
+    - Any required **shadcn-svelte primitives** (button, slider, etc.)
+    - The **audio store** and core playback logic
+    - The **`AudioProvider`** component (if it doesn't already exist)
+
+    <Note>
+      Everything is copied into your project's source tree. Nothing is added as a runtime `node_modules` dependency.
+    </Note>
+
+    **Manual installation** is also supported if you prefer to copy files yourself. Each component's documentation page includes the full source for manual setup.
+  </Step>
+
+  <Step title="Wrap your app with AudioProvider">
+    `AudioProvider` is required for all Svelte Audio UI components. It acts as the central engine that:
+
+    - Initializes and manages the `HTMLAudioElement`
+    - Syncs playback state with the audio store
+    - Handles buffering, retries, and errors
+    - Preloads upcoming tracks for smoother playback
+    - Persists playback state across navigation (volume, progress, queue, etc.)
+
+    Add `AudioProvider` at the root of your application—typically your SvelteKit root layout—so every audio component shares a single, consistent playback state.
+
+    ```svelte src/routes/+layout.svelte
+    <script lang="ts">
+      import { AudioProvider } from "$lib/components/ui/audio/provider/index.js";
+
+      let { children } = $props();
+
+      const initialTracks = [
+        {
+          id: "1",
+          title: "Track Title",
+          artist: "Artist Name",
+          url: "/audio/track.mp3",
+        },
+      ];
+    </script>
+
+    <AudioProvider tracks={initialTracks}>
+      {@render children()}
+    </AudioProvider>
+    ```
+  </Step>
+
+  <Step title="Use the AudioPlayer component">
+    Import and render the `AudioPlayer` component anywhere inside your layout tree. Because `AudioProvider` is already at the root, the player automatically connects to the shared playback state.
+
+    ```svelte src/routes/+page.svelte
+    <script lang="ts">
+      import * as AudioPlayer from "$lib/components/ui/audio/player/index.js";
+    </script>
+
+    <AudioPlayer.Root>
+      <AudioPlayer.ControlBar>
+        <AudioPlayer.Play />
+        <AudioPlayer.SeekBar />
+        <AudioPlayer.TimeDisplay />
+        <AudioPlayer.Volume />
+      </AudioPlayer.ControlBar>
+    </AudioPlayer.Root>
+    ```
+
+    <Tip>
+      The player is built from composable primitives. You can include only the parts you need — add `AudioPlayer.SkipBack`, `AudioPlayer.SkipForward`, `AudioPlayer.Rewind`, and more to build the exact control surface you want.
+    </Tip>
+  </Step>
+</Steps>
+
+## Styling
+
+Components are styled with a design token system defined by CSS variables and implemented with Tailwind CSS. The variables follow the same approach as shadcn/ui and are fully customizable.
+
+You can override the look of any component by editing its Tailwind class attributes directly—no specificity battles or wrapper components needed. The token system means your theme changes propagate consistently across all components.
+
+For detailed information about color tokens and customization options, see the [shadcn-svelte theming documentation](https://www.shadcn-svelte.com/docs/theming).
+
+## Working with LLMs
+
+The documentation is structured to work well with AI tools. The following resources are available:
+
+- **[llms.txt](https://svelte-audio-ui.vercel.app/llms.txt)** — a lightweight map of the documentation and component structure, so AI tools can quickly understand how things are organized without scanning everything
+- **[llms-full.txt](https://svelte-audio-ui.vercel.app/llms-full.txt)** — a more complete dump of the docs and component sources, useful when you want deeper analysis or more accurate code generation
+- **Copy Markdown button** — available on every page, so you can quickly grab the content and feed it into your own AI workflow without extra cleanup

@@ -1,0 +1,285 @@
+---
+title: "Audio Store: Global Reactive Playback State for Svelte"
+description: "audioStore is a Svelte 5 reactive singleton for managing playback state and queue. Import it anywhere — no subscriptions, contexts, or setup required."
+---
+
+`audioStore` is a global Svelte 5 reactive singleton that manages all playback state and queue data across your app. Because it uses `$state` runes under the hood, you can import it into any component or `.ts` file and read its properties directly — no subscriptions, no stores, no contexts required. Svelte tracks the dependencies automatically and re-renders only the parts of your UI that changed.
+
+## Installation
+
+Add the audio store to your project using the shadcn-svelte CLI. The store is bundled with `AudioProvider`, so installing the provider gives you both.
+
+<CodeGroup>
+
+```bash pnpm
+pnpm dlx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/provider.json
+```
+
+```bash npm
+npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/provider.json
+```
+
+```bash yarn
+npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/provider.json
+```
+
+```bash bun
+bun x shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/provider.json
+```
+
+</CodeGroup>
+
+## Import
+
+Import the global store and any named helpers or types you need:
+
+```typescript
+import {
+  audioStore,
+  calculateNextIndex,
+  calculatePreviousIndex,
+  canUseDOM,
+  type RepeatMode,
+  type InsertMode,
+} from "$lib/audio-store.svelte";
+```
+
+## Core concepts
+
+### The `audioStore` singleton
+
+`audioStore` is an instance of a class-based `$state` rune. Import it once and use it anywhere — in components, in plain `.ts` files, or in SvelteKit load functions. There is no setup or teardown required.
+
+```svelte
+<script lang="ts">
+  import { audioStore } from "$lib/audio-store.svelte";
+</script>
+
+<p>
+  {audioStore.currentTrack?.title} — {audioStore.isPlaying ? "Playing" : "Paused"}
+</p>
+```
+
+<Tip>
+Because `audioStore` uses granular `$state` runes, only the components that read a changed property will re-render. You get fine-grained reactivity for free.
+</Tip>
+
+### Architecture
+
+`audioStore` is responsible for state only. It does not touch the `HTMLAudioElement` directly. The `AudioProvider` component reads the store and drives the browser's audio API in response to state changes. Async events like buffering and track end are surfaced back to the store by `AudioProvider` via `syncTime()` and `handleTrackEnd()`.
+
+## Store state
+
+All properties are deeply reactive via `$state`.
+
+| Category | Property | Type | Description |
+| --- | --- | --- | --- |
+| **Playback** | `isPlaying` | `boolean` | Whether audio is currently playing |
+| | `isLoading` | `boolean` | Whether a track is loading |
+| | `isBuffering` | `boolean` | Whether audio is actively buffering |
+| | `isError` | `boolean` | Whether an error has occurred |
+| | `errorMessage` | `string \| null` | Human-readable error detail |
+| **Current track** | `currentTrack` | `Track \| null` | The active track object |
+| | `currentTime` | `number` | Playback position in seconds |
+| | `duration` | `number` | Track length in seconds |
+| | `progress` | `number` | Playback progress as a value from 0–100 |
+| | `bufferedTime` | `number` | How many seconds have been buffered |
+| **Queue** | `queue` | `Track[]` | The ordered array of tracks |
+| | `currentQueueIndex` | `number` | Index of the active track in the queue (`-1` if none) |
+| **Controls** | `volume` | `number` | Volume level from 0–1 |
+| | `isMuted` | `boolean` | Whether audio is muted |
+| | `playbackRate` | `number` | Playback speed from 0.25–2 |
+| | `repeatMode` | `"none" \| "one" \| "all"` | Current repeat mode |
+| | `shuffleEnabled` | `boolean` | Whether shuffle is active |
+| | `insertMode` | `"first" \| "last" \| "after"` | Where new tracks are inserted into the queue |
+
+## Types
+
+| Type | Values | Description |
+| --- | --- | --- |
+| `RepeatMode` | `"none" \| "one" \| "all"` | Controls how the queue repeats after reaching the end |
+| `InsertMode` | `"first" \| "last" \| "after"` | Determines where `addToQueue` places a new track |
+
+## Utility functions
+
+### `calculateNextIndex`
+
+Calculate the next queue index based on current state. Returns `-1` when there is no valid next track.
+
+```typescript
+const nextIndex = calculateNextIndex({
+  queue: audioStore.queue,
+  currentQueueIndex: audioStore.currentQueueIndex,
+  shuffleEnabled: audioStore.shuffleEnabled,
+  repeatMode: audioStore.repeatMode,
+});
+// Returns: number — track index or -1 if none
+```
+
+**Parameters**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `queue` | `Track[]` | The current track queue |
+| `currentQueueIndex` | `number` | Index of the active track |
+| `shuffleEnabled` | `boolean` | Whether shuffle is on |
+| `repeatMode` | `RepeatMode` | Current repeat mode |
+
+### `calculatePreviousIndex`
+
+Calculate the previous queue index. Accepts the same parameters as `calculateNextIndex`.
+
+```typescript
+const prevIndex = calculatePreviousIndex({
+  queue: audioStore.queue,
+  currentQueueIndex: audioStore.currentQueueIndex,
+  shuffleEnabled: audioStore.shuffleEnabled,
+  repeatMode: audioStore.repeatMode,
+});
+// Returns: number — track index or -1 if none
+```
+
+### `canUseDOM()`
+
+Returns `true` when running in a browser environment. Use this guard before accessing `window` or `localStorage` in code that may run on the server.
+
+```typescript
+if (canUseDOM()) {
+  // Safe to access window, localStorage, etc.
+}
+```
+
+## Actions
+
+Call actions directly on the `audioStore` instance.
+
+| Category | Action | Signature | Description |
+| --- | --- | --- | --- |
+| **Playback** | `play` | `() => void` | Signal playback intent. No-op while loading. |
+| | `pause` | `() => void` | Pause playback |
+| | `togglePlay` | `() => void` | Toggle between play and pause |
+| | `seek` | `(time: number) => void` | Seek to a position in seconds |
+| **Navigation** | `next` | `() => void` | Advance to the next track |
+| | `previous` | `() => void` | Go to the previous track, or restart if past 3 seconds |
+| | `setCurrentTrack` | `(track: Track \| null) => void` | Load and play a specific track |
+| | `setQueueAndPlay` | `(tracks: Track[], startIndex: number) => void` | Replace the queue and play from a given index |
+| **Queue** | `addToQueue` | `(track: Track, mode?: InsertMode) => void` | Add a track using `"first"`, `"last"`, or `"after"` |
+| | `removeFromQueue` | `(trackId: string) => void` | Remove a track by ID |
+| | `moveInQueue` | `(fromIndex: number, toIndex: number) => void` | Reorder a track in the queue |
+| | `setQueue` | `(tracks: Track[], startIndex?: number) => void` | Replace the entire queue |
+| | `clearQueue` | `() => void` | Remove all tracks from the queue |
+| | `addTracksToEndOfQueue` | `(tracks: Track[]) => void` | Append tracks, skipping any duplicates |
+| **Volume** | `setVolume` | `({ volume: number }) => void` | Set volume from 0–1 |
+| | `toggleMute` | `() => void` | Toggle mute state |
+| **Modes** | `setPlaybackRate` | `(rate: number) => void` | Set playback speed (0.25–2). No-op on live streams. |
+| | `changeRepeatMode` | `() => void` | Cycle through `none → one → all → none` |
+| | `setRepeatMode` | `(mode: RepeatMode) => void` | Set repeat mode directly |
+| | `shuffle` | `() => void` | Randomize queue order around the current track |
+| | `unshuffle` | `() => void` | Disable shuffle (queue order is not restored) |
+| | `setInsertMode` | `(mode: InsertMode) => void` | Set the default insert mode |
+| **Error** | `setError` | `(message: string \| null) => void` | Set or clear the error state |
+
+## Examples
+
+### Basic usage
+
+Wire up a minimal custom player using the store directly:
+
+```svelte
+<script lang="ts">
+  import { audioStore } from "$lib/audio-store.svelte";
+
+  function formatDuration(seconds: number) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  }
+</script>
+
+<div class="rounded-md border p-4">
+  <p class="font-bold">Track: {audioStore.currentTrack?.title ?? "None"}</p>
+  <p class="text-sm text-muted-foreground">
+    {formatDuration(audioStore.currentTime)} / {formatDuration(audioStore.duration)}
+  </p>
+  <p class="mb-2">Status: {audioStore.isPlaying ? "Playing" : "Paused"}</p>
+
+  <div class="flex gap-2">
+    <button onclick={() => audioStore.previous()}>Prev</button>
+    <button onclick={() => audioStore.togglePlay()}>
+      {audioStore.isPlaying ? "Pause" : "Play"}
+    </button>
+    <button onclick={() => audioStore.next()}>Next</button>
+  </div>
+</div>
+```
+
+### Queue management
+
+Add, remove, and clear tracks from the queue:
+
+```svelte
+<script lang="ts">
+  import { audioStore } from "$lib/audio-store.svelte";
+
+  const newTrack = { id: "123", url: "/music.mp3", title: "Indie Banger" };
+</script>
+
+<div>
+  <div class="mb-4 flex gap-2">
+    <button onclick={() => audioStore.addToQueue(newTrack, "last")}>Add track</button>
+    <button onclick={() => audioStore.clearQueue()}>Clear</button>
+  </div>
+
+  <div class="space-y-1">
+    {#each audioStore.queue as track (track.id)}
+      <div class="flex justify-between border p-2">
+        <span>{track.title}</span>
+        <button onclick={() => audioStore.removeFromQueue(track.id)}>Remove</button>
+      </div>
+    {/each}
+  </div>
+</div>
+```
+
+### Outside of components
+
+Because `audioStore` is a plain class singleton, you can use it from any `.ts` file — not just Svelte components:
+
+```typescript
+import { audioStore } from "$lib/audio-store.svelte";
+
+// Read state
+console.log(audioStore.isPlaying);
+
+// Trigger actions
+audioStore.play();
+audioStore.setVolume({ volume: 0.5 });
+audioStore.addToQueue({ id: "abc", url: "/track.mp3", title: "My Track" }, "after");
+```
+
+## Persistence
+
+The store automatically saves a subset of state to `localStorage` on every change and restores it when the page loads. Users can resume their session after a refresh without any extra setup.
+
+**Storage key:** `audio:ui:store`
+
+| Category | Properties persisted |
+| --- | --- |
+| **Playback** | `currentTrack`, `currentTime`, `currentQueueIndex`, `playbackRate` |
+| **Queue** | `queue` |
+| **Settings** | `volume`, `isMuted`, `repeatMode`, `shuffleEnabled`, `insertMode` |
+
+<Note>
+Transient state like `isPlaying`, `isLoading`, `isBuffering`, and `isError` is not persisted — playback does not auto-resume on load.
+</Note>
+
+## Notes
+
+<Info>
+`audioStore` manages state only. The `AudioProvider` component is responsible for translating state changes into actual audio element operations. Make sure `AudioProvider` wraps the part of your app where playback happens.
+</Info>
+
+- **Reactivity**: Accessing `audioStore` properties inside `$derived` or `$effect` blocks establishes granular reactivity automatically.
+- **Async events**: Buffering and track-end events are driven by `AudioProvider`, which calls `handleTrackEnd()` and `syncTime()` on the store.
+- **Live streams**: `playbackRate` is automatically reset to `1` when loading a live stream.
+- **SSR safety**: The store uses `canUseDOM()` before accessing `localStorage`, so it is safe to import on the server.

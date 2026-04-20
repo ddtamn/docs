@@ -1,0 +1,238 @@
+---
+title: "AudioQueue: Browse, Search, and Reorder Playback Now"
+description: "AudioQueue components let users browse the playback queue, search tracks, drag to reorder, shuffle, change repeat mode, and configure insert behavior."
+---
+
+The Audio Queue components give your users full control over the playback queue. `AudioQueue` opens a modal dialog with a searchable, drag-to-reorder track list. `AudioQueueShuffle` and `AudioQueueRepeatMode` provide compact toggle buttons for quick mode switching. `AudioQueuePreferences` bundles repeat mode and insert mode into a single dropdown for space-constrained layouts. All components read from and write to `audioStore` automatically.
+
+## Installation
+
+Install the components via the shadcn-svelte CLI:
+
+<CodeGroup>
+
+```bash pnpm
+pnpm dlx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/queue.json
+```
+
+```bash npm
+npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/queue.json
+```
+
+```bash yarn
+npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/queue.json
+```
+
+```bash bun
+bun x shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/queue.json
+```
+
+</CodeGroup>
+
+Queue components use icons from `@lucide/svelte`. Install it if you haven't already:
+
+<CodeGroup>
+
+```bash pnpm
+pnpm i @lucide/svelte
+```
+
+```bash npm
+npm i @lucide/svelte
+```
+
+```bash yarn
+yarn install @lucide/svelte
+```
+
+```bash bun
+bun install @lucide/svelte
+```
+
+</CodeGroup>
+
+## Usage
+
+Import the components from the queue namespace:
+
+```svelte
+<script lang="ts">
+  import * as AudioQueue from "$lib/components/ui/audio/queue/index.js";
+</script>
+```
+
+### Basic queue
+
+The `AudioQueue` root component renders as an icon button. Clicking it opens a dialog showing the current queue with search and track management controls.
+
+```svelte
+<script lang="ts">
+  import * as AudioPlayer from "$lib/components/ui/audio/player/index.js";
+  import * as AudioQueue from "$lib/components/ui/audio/queue/index.js";
+</script>
+
+<AudioPlayer.Root>
+  <AudioPlayer.ControlBar>
+    <AudioQueue.Root />
+  </AudioPlayer.ControlBar>
+</AudioPlayer.Root>
+```
+
+### Queue with shuffle and repeat
+
+Add `AudioQueue.Shuffle` and `AudioQueue.RepeatMode` alongside the queue button for quick access to ordering controls:
+
+```svelte
+<script lang="ts">
+  import * as AudioPlayer from "$lib/components/ui/audio/player/index.js";
+  import * as AudioQueue from "$lib/components/ui/audio/queue/index.js";
+</script>
+
+<AudioPlayer.Root class="w-max">
+  <AudioPlayer.ControlBar>
+    <AudioQueue.Shuffle />
+    <AudioQueue.RepeatMode />
+    <AudioQueue.Root />
+  </AudioPlayer.ControlBar>
+</AudioPlayer.Root>
+```
+
+### Queue with preferences
+
+Use `AudioQueue.Preferences` when you want all queue settings in a single compact dropdown — ideal for space-constrained layouts:
+
+```svelte
+<script lang="ts">
+  import * as AudioPlayer from "$lib/components/ui/audio/player/index.js";
+  import * as AudioQueue from "$lib/components/ui/audio/queue/index.js";
+</script>
+
+<AudioPlayer.Root class="w-max">
+  <AudioPlayer.ControlBar>
+    <AudioQueue.Preferences />
+    <AudioQueue.Root />
+  </AudioPlayer.ControlBar>
+</AudioPlayer.Root>
+```
+
+### Queue with all controls
+
+Combine all four components for the most complete queue control surface:
+
+```svelte
+<script lang="ts">
+  import * as AudioPlayer from "$lib/components/ui/audio/player/index.js";
+  import * as AudioQueue from "$lib/components/ui/audio/queue/index.js";
+</script>
+
+<AudioPlayer.Root class="w-max">
+  <AudioPlayer.ControlBar>
+    <AudioQueue.Shuffle />
+    <AudioQueue.RepeatMode />
+    <AudioQueue.Preferences />
+    <AudioQueue.Root />
+  </AudioPlayer.ControlBar>
+</AudioPlayer.Root>
+```
+
+## API reference
+
+### AudioQueue
+
+An icon button that opens a modal dialog with the full playback queue.
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `class` | `string` | — | Additional CSS classes on the trigger button. |
+| `searchPlaceholder` | `string` | `"Search for a track..."` | Placeholder text in the search input. |
+| `emptyLabel` | `string` | `"No tracks found"` | Heading shown when the queue or search result is empty. |
+| `emptyDescription` | `string` | `"Try searching for a different track"` | Subtext shown below the empty state heading. |
+| `onTrackSelect` | `(index: number) => void` | — | Called when a track row is clicked. |
+
+**Behavior:**
+
+- Opens a modal dialog with a full-height, scrollable track list.
+- Search filters by `title` and `artist` (case-insensitive).
+- When no filter is active, the list is **drag-to-reorder** enabled and updates the queue on drop.
+- Clicking a track plays it immediately; clicking the currently playing track toggles play/pause.
+- A remove button appears on all non-current tracks.
+- A **Clear** button removes all tracks from the queue and closes the dialog.
+
+---
+
+### AudioQueueShuffle
+
+A toggle button that enables or disables shuffle mode. Highlights when shuffle is active.
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `class` | `string` | — | Additional CSS classes. |
+| `size` | `string` | `"icon"` | Button size variant. |
+| `variant` | `string` | `"outline"` | Button visual variant. |
+
+Accepts any additional HTML button attributes.
+
+**Behavior:**
+
+- When shuffle is **enabled**, calls `audioStore.shuffle()` to randomize the remaining tracks.
+- When shuffle is **disabled**, calls `audioStore.unshuffle()` to restore the original order.
+- Uses `role="switch"` and `aria-checked` for screen reader accessibility.
+
+---
+
+### AudioQueueRepeatMode
+
+A toggle button that cycles through three repeat modes: `none` → `all` → `one`.
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `class` | `string` | — | Additional CSS classes. |
+| `size` | `string` | `"icon"` | Button size variant. |
+| `variant` | `string` | `"outline"` | Button visual variant. |
+
+Accepts any additional HTML button attributes.
+
+**Behavior:**
+
+| State | Icon | Tooltip |
+| --- | --- | --- |
+| `none` | `Repeat` (dimmed) | "Disable repeat" |
+| `all` | `Repeat` (highlighted) | "Repeat playlist" |
+| `one` | `Repeat1` (highlighted) | "Repeat this track" |
+
+Cycles on click via `audioStore.changeRepeatMode()`. Uses `role="switch"` for accessibility.
+
+---
+
+### AudioQueuePreferences
+
+An icon button that opens a dropdown with advanced queue settings: **Repeat Mode** and **Insert Mode**.
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `class` | `string` | — | Additional CSS classes. |
+| `size` | `string` | `"icon"` | Button size variant. |
+| `variant` | `string` | `"outline"` | Button visual variant. |
+| `tooltipLabel` | `string` | `"Queue preferences"` | Tooltip text shown on the trigger button. |
+
+**Repeat mode options:**
+
+| Value | Description |
+| --- | --- |
+| `none` | No repeat — stops after the last track |
+| `one` | Repeat the current track indefinitely |
+| `all` | Loop through the full queue continuously |
+
+**Insert mode options:**
+
+Controls where newly added tracks are inserted:
+
+| Value | Description |
+| --- | --- |
+| `first` | Insert at the beginning of the queue |
+| `last` | Append to the end of the queue |
+| `after` | Insert immediately after the currently playing track |
+
+<Tip>
+  Use `AudioQueuePreferences` as a single entry point for queue settings when screen space is limited, and `AudioQueueShuffle` + `AudioQueueRepeatMode` as separate buttons when you want immediate access to both controls.
+</Tip>

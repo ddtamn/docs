@@ -1,0 +1,95 @@
+---
+title: "Svelte Audio UI: Build Your Own Audio Interface Today"
+description: "A copy-paste audio component system for Svelte 5. Own every line of code — no lock-in, no runtime dependency, full control over behavior and styles."
+---
+
+Svelte Audio UI is a collection of audio UI components built with Svelte 5, Tailwind CSS, and shadcn-svelte. You don't install it as a dependency—you copy the components into your project, own them completely, and adapt them however you need.
+
+<Note>
+  Svelte Audio UI is **not a component library**. It is a system for building your own audio UI. You copy the code, it lives in your project, and you are never tied to an external package or update cycle.
+</Note>
+
+## Why it exists
+
+Most UI libraries work well at the start. But as soon as you need deeper control—adjusting behavior, matching a design system, or building something slightly outside the provided components—friction builds up fast.
+
+You end up wrapping components just to change small details, overriding styles in ways that feel fragile, and mixing libraries that don't share the same API or design language.
+
+Svelte Audio UI solves this by giving you the actual code instead of an abstraction layer.
+
+## Core principles
+
+<CardGroup cols={2}>
+  <Card title="No lock-in" icon="lock-open">
+    Your components live inside your codebase. You are never tied to an external package or an upstream update cycle that might break your UI.
+  </Card>
+  <Card title="Full control over behavior" icon="sliders">
+    Change logic, structure, or state handling directly. No wrappers, no overrides, no fighting an API you don't own.
+  </Card>
+  <Card title="Long-term maintainability" icon="arrows-rotate">
+    Instead of working against abstractions, your components evolve naturally alongside your application.
+  </Card>
+  <Card title="Composition over monoliths" icon="puzzle-piece">
+    Built from smaller primitives—player controls, timeline, volume, waveform—that you combine as needed rather than one large opinionated component.
+  </Card>
+</CardGroup>
+
+## Built for Svelte 5
+
+Svelte Audio UI is written specifically for modern Svelte—not adapted from another framework. It uses Svelte 5 runes throughout, keeping components explicit and predictable without hidden reactivity magic.
+
+<Info>
+  All components use Svelte 5 patterns. Svelte 4 and earlier are not supported.
+</Info>
+
+State and reactivity are straightforward to follow, close to plain JavaScript, and easy to extend without learning a custom internal API. The goal is simple: everything should feel like native Svelte code.
+
+## Inspired by shadcn-svelte
+
+The workflow is directly influenced by [shadcn-svelte](https://shadcn-svelte.com):
+
+- Components are copied, not installed
+- Everything lives in your project
+- Nothing is hidden behind a package boundary
+
+Svelte Audio UI narrows that same philosophy to one domain: building audio interfaces that are flexible and composable.
+
+## Composition model
+
+Instead of shipping one large "Audio Player" component, the system is built from smaller primitives you combine as needed:
+
+- **Player controls** — play, pause, skip, and other interaction elements reusable across layouts
+- **Timeline / progress** — a flexible progress system adaptable into simple sliders or advanced scrubbing
+- **Volume controls** — independent, composable volume handling reusable in different contexts
+- **Optional layers** — waveform, metadata, and other UI layers you plug in without affecting the core system
+
+On top of primitives, the system also includes pre-built compositions called [particles](https://svelte-audio-ui.vercel.app/particles)—ready-to-use combinations of multiple components for common audio UI patterns.
+
+## Beautiful defaults
+
+Styling uses [Tailwind CSS](https://tailwindcss.com) with a focus on clean, consistent defaults. Components look good out of the box without imposing a heavy visual identity. Because styles are local and not abstracted, you adjust them directly without fighting specificity or overrides.
+
+<Tip>
+  All styling is done with Tailwind CSS utility classes and CSS variables that follow the same token approach as shadcn-svelte. Customizing the look of any component is as straightforward as editing its class attributes.
+</Tip>
+
+## AI-ready
+
+Because everything is code inside your project, AI tools can work with it effectively. To support LLM-assisted workflows, Svelte Audio UI provides:
+
+- **[llms.txt](https://svelte-audio-ui.vercel.app/llms.txt)** — a lightweight map of the documentation and component structure
+- **[llms-full.txt](https://svelte-audio-ui.vercel.app/llms-full.txt)** — a complete dump of docs and component sources for deeper analysis
+- **Per-page Markdown copy** — every documentation page includes a button to copy its content as Markdown for use in your AI workflow
+
+## Open source
+
+Svelte Audio UI is open source and built in the open. It evolves as it is used in real projects. You are free to use it, adapt it, and contribute back.
+
+<CardGroup cols={2}>
+  <Card title="Get started" icon="rocket" href="/get-started">
+    Add your first audio component to a Svelte 5 project.
+  </Card>
+  <Card title="Audio Player" icon="circle-play" href="/components/player">
+    Explore the flagship Audio Player component.
+  </Card>
+</CardGroup>

@@ -1,0 +1,183 @@
+---
+title: "Audio Provider: The Required Svelte 5 Audio Engine"
+description: "AudioProvider sets up the audio element, syncs playback state, handles errors with retries, and saves to localStorage. Required for all audio components."
+---
+
+`AudioProvider` is the engine behind every audio component in Svelte Audio UI. It initializes the HTML audio element, registers all DOM event listeners, syncs playback state with `audioStore`, handles errors and automatic retries, preloads the next track, and persists state to `localStorage`. You mount it once at your layout root — all other components wire themselves to it automatically.
+
+<Warning>
+  `AudioProvider` is required. No audio component will function without it mounted higher in the component tree.
+</Warning>
+
+## Installation
+
+Install the component via the shadcn-svelte CLI:
+
+<CodeGroup>
+
+```bash pnpm
+pnpm dlx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/provider.json
+```
+
+```bash npm
+npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/provider.json
+```
+
+```bash yarn
+npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/provider.json
+```
+
+```bash bun
+bun x shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/provider.json
+```
+
+</CodeGroup>
+
+## Usage
+
+Mount `AudioProvider` in your layout file so every page shares the same playback state. Pass your initial track list via the `tracks` prop:
+
+```svelte +layout.svelte
+<script lang="ts">
+  import { AudioProvider } from "$lib/components/ui/audio/provider/index.js";
+
+  let { children } = $props();
+
+  const tracks = [
+    {
+      id: "1",
+      title: "My Track",
+      artist: "Artist Name",
+      url: "https://example.com/audio.mp3",
+    },
+    {
+      id: "2",
+      title: "Second Track",
+      artist: "Another Artist",
+      url: "https://example.com/audio2.mp3",
+      cover: "https://example.com/cover.jpg",
+      duration: 213,
+    },
+  ];
+</script>
+
+<AudioProvider {tracks}>
+  {@render children()}
+</AudioProvider>
+```
+
+## API reference
+
+### Props
+
+<ParamField path="tracks" type="Track[]" default="[]">
+  Initial list of tracks to load into the queue. If the queue was already restored from `localStorage`, this prop only updates the store when the track list differs by length or `id`.
+</ParamField>
+
+<ParamField path="children" type="Snippet" required>
+  The content to render inside the provider. Typically this is your page or layout slot.
+</ParamField>
+
+### Track shape
+
+Each object in the `tracks` array must conform to this interface:
+
+```typescript
+interface Track {
+  id: string | number;       // Unique identifier
+  title: string;             // Display title
+  artist?: string;           // Optional artist name
+  url: string;               // URL to the audio file or live stream
+  cover?: string;            // Optional album art URL
+  duration?: number;         // Optional pre-known duration in seconds
+}
+```
+
+## How it works
+
+`AudioProvider` coordinates three layers:
+
+```
+tracks prop        →  audioStore.queue
+audioStore changes →  htmlAudio (DOM mutations)
+htmlAudio events   →  audioStore state
+audioStore state   →  localStorage
+```
+
+1. **`htmlAudio`** — a singleton that holds the actual `HTMLAudioElement` and exposes imperative methods (`load`, `play`, `pause`, `seek`, etc.).
+2. **`audioStore`** — a Svelte 5 reactive class instance (using `$state` fields) that holds all playback state: current track, queue, progress, volume, repeat mode, and more.
+3. **`AudioProvider`** — the glue layer that wires DOM events → store updates and store changes → DOM mutations via `$effect` runes.
+
+## Lifecycle
+
+On mount, `AudioProvider`:
+
+<Steps>
+  <Step title="Initializes the audio element">
+    Calls `htmlAudio.init()` to create the underlying `HTMLAudioElement`.
+  </Step>
+  <Step title="Creates a preload element">
+    Creates a secondary muted `<audio>` element used to buffer the next track silently.
+  </Step>
+  <Step title="Attaches event listeners">
+    Registers all playback event handlers (`play`, `pause`, `error`, `ended`, `timeupdate`, etc.) via an `AbortController` — they are automatically cleaned up when `AudioProvider` is destroyed.
+  </Step>
+  <Step title="Restores persisted state">
+    Reads `localStorage` and restores the last track, playback position, volume, and settings. Playback does not auto-start on restore.
+  </Step>
+</Steps>
+
+## Reactive `$effect` sync
+
+Eight `$effect` runes keep the `HTMLAudioElement` in sync with `audioStore`:
+
+| Effect | Trigger | Action |
+| --- | --- | --- |
+| Track sync | `tracks` prop changes | Updates `audioStore.queue` if tracks differ by length or `id` |
+| Track change | `audioStore.currentTrack` changes | Loads the new track URL and plays if already playing |
+| Seek | `audioStore.currentTime` user update | Seeks `HTMLAudioElement` to the new position |
+| Volume | `audioStore.volume` changes | Sets `audio.volume` |
+| Mute | `audioStore.isMuted` changes | Sets `audio.muted` |
+| Playback rate | `audioStore.playbackRate` changes | Sets `audio.playbackRate` |
+| Queue reset | `audioStore.queue` becomes empty | Clears the preload audio `src` |
+| Persistence | Any tracked state changes | Saves all relevant fields to `localStorage` |
+
+## Error handling
+
+`AudioProvider` classifies `MediaError` codes and decides whether to retry:
+
+| Error code | Message | Recoverable |
+| --- | --- | --- |
+| `MEDIA_ERR_ABORTED` (1) | Playback cancelled | Yes |
+| `MEDIA_ERR_NETWORK` (2) | Network error | Yes |
+| `MEDIA_ERR_DECODE` (3) | Audio file decoding error | No |
+| `MEDIA_ERR_SRC_NOT_SUPPORTED` (4) | File/network loading error | Yes |
+
+For recoverable errors, `AudioProvider` retries up to **3 times** with exponential backoff (1 s → 2 s → 4 s). If all retries fail, `audioStore.isError` is set to `true` with a descriptive error message.
+
+## Next track preloading
+
+When playback starts, `AudioProvider` preloads the next track in a secondary muted `<audio>` element. This minimizes the buffering delay when the current track ends or the user skips forward. The next track is calculated using the current shuffle and repeat mode settings.
+
+## State persistence
+
+`audioStore` automatically saves to `localStorage` under the key `audio:ui:store` whenever any of these fields change:
+
+- Current track and queue
+- Volume and mute state
+- Playback rate
+- Repeat mode and shuffle enabled
+- Current playback position
+- Queue insert mode and current index
+
+On the next page load, `AudioProvider` restores these values and seeks the audio element to the last known position — but does **not** auto-play.
+
+## Notes
+
+- **Only one instance** — mount `AudioProvider` once at the top of your app. Multiple instances conflict because they share the same `htmlAudio` singleton.
+
+- **`tracks` prop is additive** — if `audioStore.queue` already has tracks (e.g. restored from `localStorage`), the `tracks` prop will not overwrite them unless the list differs by length or `id`. This prevents clobbering a restored queue on page reload.
+
+- **No auto-play on restore** — `AudioProvider` restores the last position and loads the track, but playback does not start automatically. The user must press play.
+
+- **Live stream detection** — live streams are detected via `audio.duration === Infinity` or `NaN`. When a live stream drops (the `ended` event fires on a live source), `audioStore.isError` is set with the message `"Live stream connection lost"`.

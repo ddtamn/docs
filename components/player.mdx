@@ -1,0 +1,346 @@
+---
+title: "Audio Player: Composable Playback Controls Svelte 5"
+description: "AudioPlayer is a composable set of Svelte 5 controls — play, seek, skip, and volume — that share state automatically through the global audio store."
+---
+
+`AudioPlayer` is a composable system of self-contained Svelte 5 components. Each subcomponent reads and writes to the global `audioStore` automatically, so you can mix and match controls — play, skip, rewind, seek, time display, and volume — without any manual wiring. Wrap everything in `AudioPlayer.Root` and place the pieces where you need them.
+
+## Installation
+
+Install the component via the shadcn-svelte CLI:
+
+<CodeGroup>
+
+```bash pnpm
+pnpm dlx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/player.json
+```
+
+```bash npm
+npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/player.json
+```
+
+```bash yarn
+npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/player.json
+```
+
+```bash bun
+bun x shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/player.json
+```
+
+</CodeGroup>
+
+`AudioPlayer` uses icons from `@lucide/svelte`. Install it if you haven't already:
+
+<CodeGroup>
+
+```bash pnpm
+pnpm i @lucide/svelte
+```
+
+```bash npm
+npm i @lucide/svelte
+```
+
+```bash yarn
+yarn install @lucide/svelte
+```
+
+```bash bun
+bun install @lucide/svelte
+```
+
+</CodeGroup>
+
+## Setup
+
+Before using any audio component, wrap your app layout with `AudioProvider`. It initializes the audio element, manages state, and is required for all components to function.
+
+```svelte layout.svelte
+<script lang="ts">
+  import { AudioProvider } from "$lib/components/ui/audio/provider/index.js";
+
+  let { children } = $props();
+</script>
+
+<AudioProvider tracks={initialTracks}>
+  {@render children()}
+</AudioProvider>
+```
+
+<Note>
+  See the [Audio Provider](/components/provider) docs for full setup details, including the `Track` shape and state persistence behavior.
+</Note>
+
+## Usage
+
+Import all subcomponents from the player namespace and compose them inside `AudioPlayer.Root`:
+
+```svelte
+<script lang="ts">
+  import * as AudioPlayer from "$lib/components/ui/audio/player/index.js";
+</script>
+
+<AudioPlayer.Root>
+  <AudioPlayer.ControlBar>
+    <AudioPlayer.ControlGroup>
+      <AudioPlayer.SkipBack />
+      <AudioPlayer.Rewind />
+      <AudioPlayer.Play />
+      <AudioPlayer.FastForward />
+      <AudioPlayer.SkipForward />
+      <AudioPlayer.SeekBar />
+      <AudioPlayer.TimeDisplay />
+      <AudioPlayer.TimeDisplay remaining />
+      <AudioPlayer.Volume />
+    </AudioPlayer.ControlGroup>
+  </AudioPlayer.ControlBar>
+</AudioPlayer.Root>
+```
+
+## Stacked layout
+
+Use `variant="stacked"` on `ControlBar` to arrange controls vertically. This is useful for full-width players where the seek bar sits between two rows of controls.
+
+```svelte
+<AudioPlayer.Root>
+  <AudioPlayer.ControlBar variant="stacked">
+    <AudioPlayer.ControlGroup>
+      <AudioPlayer.TimeDisplay />
+      <AudioPlayer.SeekBar />
+      <AudioPlayer.TimeDisplay remaining />
+    </AudioPlayer.ControlGroup>
+    <AudioPlayer.ControlGroup>
+      <AudioPlayer.ControlGroup class="justify-between md:justify-start">
+        <AudioPlayer.SkipBack />
+        <AudioPlayer.Play />
+        <AudioPlayer.SkipForward />
+      </AudioPlayer.ControlGroup>
+      <AudioPlayer.Volume />
+    </AudioPlayer.ControlGroup>
+  </AudioPlayer.ControlBar>
+</AudioPlayer.Root>
+```
+
+## Player with queue
+
+Combine the player with queue controls for a full-featured experience. `AudioQueueShuffle` and `AudioQueueRepeatMode` integrate directly with `audioStore`.
+
+```svelte
+<script lang="ts">
+  import * as AudioPlayer from "$lib/components/ui/audio/player/index.js";
+  import {
+    AudioQueue,
+    AudioQueueRepeatMode,
+    AudioQueueShuffle,
+  } from "$lib/components/ui/audio/queue/index.js";
+</script>
+
+<AudioPlayer.Root>
+  <AudioPlayer.ControlBar variant="stacked">
+    <AudioPlayer.ControlGroup>
+      <AudioPlayer.TimeDisplay />
+      <AudioPlayer.SeekBar />
+      <AudioPlayer.TimeDisplay remaining />
+    </AudioPlayer.ControlGroup>
+    <AudioPlayer.ControlGroup>
+      <AudioPlayer.ControlGroup>
+        <AudioPlayer.SkipBack />
+        <AudioPlayer.Play />
+        <AudioPlayer.SkipForward />
+      </AudioPlayer.ControlGroup>
+      <AudioQueueShuffle />
+      <AudioQueueRepeatMode />
+      <AudioPlayer.Volume />
+      <AudioQueue />
+    </AudioPlayer.ControlGroup>
+  </AudioPlayer.ControlBar>
+</AudioPlayer.Root>
+```
+
+<Tip>
+  See the [Audio Queue](/components/queue) docs for shuffle, repeat, and preferences controls.
+</Tip>
+
+## API reference
+
+### AudioPlayer.Root
+
+A styled container that wraps all audio controls. It is purely presentational — it provides consistent spacing and layout but holds no state of its own.
+
+Inherits all props from `HTMLDivElement`.
+
+```svelte
+<AudioPlayer.Root>
+  <!-- Your audio controls -->
+</AudioPlayer.Root>
+```
+
+---
+
+### AudioPlayer.ControlBar
+
+Holds audio player controls and determines their layout direction.
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `variant` | `"compact" \| "stacked"` | `"compact"` | `"compact"` lays controls out horizontally; `"stacked"` arranges them vertically. |
+| `class` | `string` | — | Additional CSS classes. |
+
+**Example — compact:**
+
+```svelte
+<AudioPlayer.ControlBar>
+  <AudioPlayer.Play />
+  <AudioPlayer.SeekBar />
+  <AudioPlayer.TimeDisplay />
+</AudioPlayer.ControlBar>
+```
+
+**Example — stacked:**
+
+```svelte
+<AudioPlayer.ControlBar variant="stacked">
+  <AudioPlayer.ControlGroup>
+    <AudioPlayer.TimeDisplay />
+    <AudioPlayer.SeekBar />
+    <AudioPlayer.TimeDisplay remaining />
+  </AudioPlayer.ControlGroup>
+</AudioPlayer.ControlBar>
+```
+
+---
+
+### AudioPlayer.ControlGroup
+
+A flexible `div` wrapper for grouping controls. Use it to apply flex utilities (`justify-between`, `flex-col`, etc.) to subsections of the control bar.
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `class` | `string` | — | Additional CSS classes applied to the group wrapper. |
+
+```svelte
+<AudioPlayer.ControlBar variant="stacked">
+  <AudioPlayer.ControlGroup>
+    <AudioPlayer.TimeDisplay />
+    <AudioPlayer.SeekBar />
+    <AudioPlayer.TimeDisplay remaining />
+  </AudioPlayer.ControlGroup>
+  <AudioPlayer.ControlGroup class="justify-between">
+    <AudioPlayer.ControlGroup>
+      <AudioPlayer.SkipBack />
+      <AudioPlayer.Play />
+      <AudioPlayer.SkipForward />
+    </AudioPlayer.ControlGroup>
+    <AudioPlayer.Volume />
+  </AudioPlayer.ControlGroup>
+</AudioPlayer.ControlBar>
+```
+
+---
+
+### AudioPlayer.Play
+
+A button that toggles play/pause state. Shows a loading spinner while buffering or loading.
+
+<ParamField path="class" type="string">
+  Additional CSS classes on the button element.
+</ParamField>
+
+<ParamField path="size" type="string" default="icon">
+  Button size variant.
+</ParamField>
+
+<ParamField path="variant" type="string" default="ghost">
+  Button visual variant.
+</ParamField>
+
+<ParamField path="onclick" type="(e: MouseEvent) => void">
+  Optional additional click handler called alongside the play/pause toggle.
+</ParamField>
+
+<Note>
+  **Keyboard shortcut** — `AudioPlayer.Play` automatically handles the **Space bar** to toggle play/pause when focus is on `document.body`. No extra wiring is needed.
+</Note>
+
+---
+
+### AudioPlayer.SkipBack
+
+Navigates to the previous track. If the current track has been playing for **more than 3 seconds**, it restarts the current track instead of going back.
+
+Accepts `class`, `size`, and `variant` props (same defaults as `AudioPlayer.Play`).
+
+---
+
+### AudioPlayer.SkipForward
+
+Navigates to the next track in the queue.
+
+Accepts `class`, `size`, and `variant` props (same defaults as `AudioPlayer.Play`).
+
+---
+
+### AudioPlayer.Rewind
+
+Seeks backward by **10 seconds**. Disabled automatically on live streams.
+
+Accepts `class`, `size`, and `variant` props (same defaults as `AudioPlayer.Play`).
+
+---
+
+### AudioPlayer.FastForward
+
+Seeks forward by **10 seconds**. Disabled automatically on live streams.
+
+Accepts `class`, `size`, and `variant` props (same defaults as `AudioPlayer.Play`).
+
+---
+
+### AudioPlayer.SeekBar
+
+A range slider that shows playback progress and lets the user seek to any position.
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `class` | `string` | — | Additional CSS classes. |
+
+<Note>
+  On live streams, the seek bar is locked at 100% and seeking is disabled. Live streams are detected automatically via the HTML5 `audio.duration` value (`Infinity` or `NaN`).
+</Note>
+
+---
+
+### AudioPlayer.TimeDisplay
+
+Displays the current elapsed time or the remaining time.
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `remaining` | `boolean` | `false` | When `true`, shows time remaining (prefixed with `−`) instead of elapsed time. |
+| `class` | `string` | — | Additional CSS classes. |
+
+On live streams, the elapsed display shows the live elapsed time. The `remaining` display shows a pulsing **LIVE** badge with a Radio icon instead of a countdown.
+
+---
+
+### AudioPlayer.Volume
+
+A dropdown button that opens a vertical volume slider with a mute toggle. Hidden on mobile via `hidden md:flex`.
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `class` | `string` | — | Additional CSS classes. |
+| `size` | `string` | `"icon"` | Button size variant. |
+| `variant` | `string` | `"outline"` | Button visual variant. |
+
+---
+
+## Notes
+
+- **Component architecture** — all audio components are self-contained and read state directly from the global `audioStore`, a Svelte 5 reactive class instance defined in `audio-store.svelte.ts`. They do not accept track data as props.
+
+- **`AudioProvider` is required** — none of the player components will work without `AudioProvider` mounted higher in the component tree. Mount it once at the layout root.
+
+- **State persistence** — `audioStore` automatically persists queue, current track, volume, playback rate, repeat mode, shuffle, insert mode, and playback position to `localStorage` under the key `audio:ui:store`. State is restored on page reload.
+
+- **Live stream detection** — live streams are detected automatically when `audio.duration` is `Infinity` or `NaN`. When a live stream is active, seeking, rewind, fast-forward, and playback speed controls are all disabled, and the time display switches to a pulsing **LIVE** badge.

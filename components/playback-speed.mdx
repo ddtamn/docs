@@ -1,0 +1,159 @@
+---
+title: "AudioPlaybackSpeed: Control Audio Rate from 0.5x to 2x"
+description: "AudioPlaybackSpeed is a dropdown for changing rate from 0.5x to 2x. Auto-disables on live streams and persists the selected speed across page reloads."
+---
+
+`AudioPlaybackSpeed` is a compact dropdown button for switching the playback speed on the fly. It displays the current rate directly on the button — from a slow `0.5x` all the way up to `2x` — and automatically disables itself when a live stream is detected, with a tooltip explaining why. The selected speed is persisted to `localStorage` via `audioStore` and restored on the next page load. No extra wiring is needed: drop it anywhere in your layout and it connects to the store automatically.
+
+## Installation
+
+Install the component via the shadcn-svelte CLI:
+
+<CodeGroup>
+
+```bash pnpm
+pnpm dlx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/playback-speed.json
+```
+
+```bash npm
+npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/playback-speed.json
+```
+
+```bash yarn
+npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/playback-speed.json
+```
+
+```bash bun
+bun x shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/playback-speed.json
+```
+
+</CodeGroup>
+
+`AudioPlaybackSpeed` uses icons from `@lucide/svelte`. Install it if you haven't already:
+
+<CodeGroup>
+
+```bash pnpm
+pnpm i @lucide/svelte
+```
+
+```bash npm
+npm i @lucide/svelte
+```
+
+```bash yarn
+yarn install @lucide/svelte
+```
+
+```bash bun
+bun install @lucide/svelte
+```
+
+</CodeGroup>
+
+## Usage
+
+Import the component:
+
+```svelte
+<script lang="ts">
+  import { AudioPlaybackSpeed } from "$lib/components/ui/audio/playback-speed/index.js";
+</script>
+```
+
+### Basic usage
+
+Drop it anywhere — it reads from and writes to `audioStore` directly, with no props required:
+
+```svelte
+<AudioPlaybackSpeed />
+```
+
+### Icon-only mode
+
+Pass `size="icon"` to hide the `Gauge` icon and show only the speed label. Useful when space is tight in a control bar:
+
+```svelte
+<AudioPlaybackSpeed size="icon" variant="ghost" />
+```
+
+### Custom speeds
+
+Replace the default speed options with your own list of `{ value, label }` objects:
+
+```svelte
+<AudioPlaybackSpeed
+  speeds={[
+    { value: 0.75, label: "0.75x" },
+    { value: 1, label: "Normal" },
+    { value: 1.5, label: "1.5x" },
+    { value: 2, label: "2x" },
+  ]}
+/>
+```
+
+## API reference
+
+### AudioPlaybackSpeed
+
+#### Props
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `speeds` | `{ value: number; label: string }[]` | `DEFAULT_SPEEDS` | Speed options shown in the dropdown. Defaults: `0.5x`, `0.75x`, `1x`, `1.25x`, `1.5x`, `2x`. |
+| `size` | `string` | `"sm"` | Button size variant. Use `"icon"` to hide the `Gauge` icon and show only the speed label. |
+| `variant` | `string` | `"outline"` | Button visual variant. |
+| `class` | `string` | — | Additional CSS classes on the button element. |
+
+Accepts any additional HTML button attributes via `...rest`.
+
+#### Behavior
+
+- **Live stream disable** — automatically disabled when `htmlAudio.isLive()` returns `true`. The tooltip changes to `"Not available for live streams"` so the user always knows why the control is inactive.
+- **Current speed indicator** — the active playback rate is shown on the button face and marked with a radio checkmark in the dropdown.
+- **Persistence** — the selected speed is saved to `localStorage` via `audioStore` and restored on the next page load.
+- **Icon mode** — when `size="icon"`, the `Gauge` icon is hidden and only the speed label (e.g. `1x`) is displayed on the button.
+
+<Note>
+  `AudioPlaybackSpeed` requires `AudioProvider` (or the audio store) to be mounted higher in the tree. It reads `audioStore.playbackRate` and `audioStore.duration` reactively via Svelte 5 `$derived` runes.
+</Note>
+
+## Examples
+
+### Inside a player control bar
+
+```svelte
+<script lang="ts">
+  import * as AudioPlayer from "$lib/components/ui/audio/player/index.js";
+  import { AudioPlaybackSpeed } from "$lib/components/ui/audio/playback-speed/index.js";
+</script>
+
+<AudioPlayer.Root>
+  <AudioPlayer.ControlBar>
+    <AudioPlayer.ControlGroup>
+      <AudioPlayer.SkipBack />
+      <AudioPlayer.Play />
+      <AudioPlayer.SkipForward />
+    </AudioPlayer.ControlGroup>
+    <AudioPlayer.ControlGroup>
+      <AudioPlaybackSpeed />
+      <AudioPlayer.Volume />
+    </AudioPlayer.ControlGroup>
+  </AudioPlayer.ControlBar>
+</AudioPlayer.Root>
+```
+
+### Custom labels
+
+Use human-readable labels instead of rate multipliers:
+
+```svelte
+<AudioPlaybackSpeed
+  speeds={[
+    { value: 0.75, label: "Slow" },
+    { value: 1, label: "Normal" },
+    { value: 1.5, label: "Fast" },
+    { value: 2, label: "Turbo" },
+  ]}
+/>
+```

@@ -1,0 +1,71 @@
+---
+title: "Svelte Audio UI: Composable Audio Components for Svelte 5"
+description: "Svelte Audio UI gives you copy-paste audio components for Svelte 5. No runtime dependency, full ownership, built on shadcn-svelte and Tailwind CSS."
+---
+
+Svelte Audio UI is a collection of accessible, composable audio components for Svelte 5. Instead of installing a library, you copy the components directly into your project — giving you full control over the code, the styles, and the behavior.
+
+<CardGroup cols={2}>
+  <Card title="Get Started" icon="rocket" href="/get-started">
+    Add your first audio component in minutes using the shadcn-svelte CLI.
+  </Card>
+  <Card title="Audio Player" icon="play" href="/components/player">
+    Composable player controls: play, seek, volume, skip, and more.
+  </Card>
+  <Card title="Audio Store" icon="database" href="/libs/audio-store">
+    Global reactive state management for playback, queue, and settings.
+  </Card>
+  <Card title="UI Primitives" icon="sliders" href="/ui/fader">
+    Fader, Knob, Slider, XY Pad, and Sortable List for audio interfaces.
+  </Card>
+</CardGroup>
+
+## How it works
+
+Svelte Audio UI follows the same philosophy as shadcn/ui and shadcn-svelte: you don't install it as a runtime dependency. You use the CLI to copy components into your project and own them completely.
+
+<Steps>
+  <Step title="Initialize shadcn-svelte">
+    Make sure you have a Svelte 5 project with Tailwind CSS v4 and shadcn-svelte initialized.
+  </Step>
+  <Step title="Add a component">
+    Use the shadcn-svelte CLI to copy any component into your project:
+    ```bash
+    pnpm dlx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/player.json
+    ```
+  </Step>
+  <Step title="Wrap your app with AudioProvider">
+    Mount `AudioProvider` at your layout root to initialize the audio engine:
+    ```svelte
+    <AudioProvider tracks={initialTracks}>
+      {@render children()}
+    </AudioProvider>
+    ```
+  </Step>
+  <Step title="Use the components">
+    Drop `AudioPlayer` components anywhere in your UI — they read from the shared store automatically.
+  </Step>
+</Steps>
+
+## What's included
+
+<CardGroup cols={2}>
+  <Card title="Audio Provider" icon="plug" href="/components/provider">
+    The required engine that manages playback lifecycle, buffering, retries, and state persistence.
+  </Card>
+  <Card title="Audio Queue" icon="list" href="/components/queue">
+    Queue dialog with search, drag-to-reorder, shuffle, repeat, and insert modes.
+  </Card>
+  <Card title="Audio Track" icon="music" href="/components/track">
+    Track rows and lists with store-driven or controlled modes, filtering, and sortable grids.
+  </Card>
+  <Card title="Playback Speed" icon="gauge" href="/components/playback-speed">
+    Dropdown speed control that auto-disables on live streams.
+  </Card>
+  <Card title="HTML Audio" icon="code" href="/libs/html-audio">
+    The core singleton managing the HTMLAudioElement with retries, volume fading, and events.
+  </Card>
+  <Card title="Knob" icon="rotate-right" href="/ui/knob">
+    Circular rotary control for audio parameters, filters, and effects.
+  </Card>
+</CardGroup>

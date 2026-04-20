@@ -1,0 +1,54 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "Svelte Audio UI",
+  "theme": "willow",
+  "favicon": "https://media.brand.dev/64415e4d-de99-4aaf-9b43-90ccd16f9af2.png",
+  "colors": {
+    "primary": "#ec4c24",
+    "light": "#602213",
+    "dark": "#050404"
+  },
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/svelte-audio-ui/svelte-audio-ui"
+    }
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["introduction", "get-started"]
+          },
+          {
+            "group": "Components",
+            "pages": [
+              "components/player",
+              "components/provider",
+              "components/queue",
+              "components/track",
+              "components/playback-speed"
+            ]
+          },
+          {
+            "group": "UI Primitives",
+            "pages": [
+              "ui/fader",
+              "ui/knob",
+              "ui/slider",
+              "ui/sortable-list",
+              "ui/xy-pad"
+            ]
+          },
+          {
+            "group": "Libraries",
+            "pages": ["libs/audio-store", "libs/html-audio"]
+          }
+        ]
+      }
+    ]
+  }
+}

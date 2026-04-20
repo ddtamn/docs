@@ -1,0 +1,97 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "Svelte Audio UI",
+  "projectDescription": "A collection of accessible, composable audio UI components for Svelte 5 — copy, paste, and own the code in your project.",
+  "theme": "willow",
+  "primaryColor": "#ec4c24",
+  "lightColor": "#602213",
+  "darkColor": "#050404",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["introduction", "get-started"]
+          },
+          {
+            "group": "Components",
+            "pages": [
+              "components/player",
+              "components/provider",
+              "components/queue",
+              "components/track",
+              "components/playback-speed"
+            ]
+          },
+          {
+            "group": "UI Primitives",
+            "pages": [
+              "ui/fader",
+              "ui/knob",
+              "ui/slider",
+              "ui/sortable-list",
+              "ui/xy-pad"
+            ]
+          },
+          {
+            "group": "Libraries",
+            "pages": ["libs/audio-store", "libs/html-audio"]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Copy-paste component model — no runtime dependency or lock-in",
+    "Composable audio player with play, seek, volume, skip, and rewind controls",
+    "AudioProvider for centralized playback lifecycle and state management",
+    "Global reactive audioStore built with Svelte 5 runes",
+    "Queue management with shuffle, repeat, drag-to-reorder, and insert modes",
+    "Track list with store and controlled modes, filtering, and sortable grid layouts",
+    "Playback speed control with live stream auto-disable",
+    "UI primitives: Fader, Knob, Slider (with buffer), XY Pad, and Sortable List",
+    "Automatic localStorage persistence for queue, volume, position, and settings",
+    "Live stream detection and graceful degradation of controls",
+    "Pre-built Particles (composed component examples) for rapid prototyping",
+    "AI-ready documentation with llms.txt and per-page Markdown export"
+  ],
+  "publicApiSurface": [
+    "AudioPlayer.Root",
+    "AudioPlayer.ControlBar",
+    "AudioPlayer.ControlGroup",
+    "AudioPlayer.Play",
+    "AudioPlayer.SkipBack",
+    "AudioPlayer.SkipForward",
+    "AudioPlayer.Rewind",
+    "AudioPlayer.FastForward",
+    "AudioPlayer.SeekBar",
+    "AudioPlayer.TimeDisplay",
+    "AudioPlayer.Volume",
+    "AudioProvider (tracks prop, children slot)",
+    "AudioQueue.Root",
+    "AudioQueue.Shuffle",
+    "AudioQueue.RepeatMode",
+    "AudioQueue.Preferences",
+    "AudioTrack.Root",
+    "AudioTrack.List",
+    "AudioPlaybackSpeed",
+    "Fader",
+    "Knob",
+    "Slider",
+    "SortableList",
+    "XYPad",
+    "audioStore (singleton)",
+    "audioStore.play / pause / togglePlay / seek / next / previous",
+    "audioStore.addToQueue / removeFromQueue / clearQueue / setQueue / setQueueAndPlay",
+    "audioStore.setVolume / toggleMute / setPlaybackRate / changeRepeatMode / shuffle",
+    "htmlAudio (singleton)",
+    "htmlAudio.init / load / play / pause / setCurrentTime / setPlaybackRate",
+    "htmlAudio.setVolume / setMuted / getVolume / getDuration / getCurrentTime / isLive",
+    "formatDuration(seconds)",
+    "calculateNextIndex(params)",
+    "calculatePreviousIndex(params)",
+    "canUseDOM()"
+  ]
+}

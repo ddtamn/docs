@@ -1,0 +1,262 @@
+---
+title: "HTML Audio: Direct Control of the HTMLAudioElement"
+description: "htmlAudio manages the HTMLAudioElement with automatic retries, smooth volume fading, and custom events for fine-grained playback control in Svelte 5 apps."
+---
+
+`htmlAudio` is the core singleton that manages the underlying `HTMLAudioElement`. It handles automatic retry logic on playback errors, smooth volume cross-fading, and custom events you can listen to from anywhere. You interact with it when you need low-level playback control or want to respond to custom playback events — or you can let `AudioProvider` drive it automatically while you work with `audioStore` instead.
+
+## Installation
+
+`htmlAudio` is included when you install the `AudioProvider` component via the shadcn-svelte CLI:
+
+<CodeGroup>
+
+```bash pnpm
+pnpm dlx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/provider.json
+```
+
+```bash npm
+npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/provider.json
+```
+
+```bash yarn
+npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/provider.json
+```
+
+```bash bun
+bun x shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/provider.json
+```
+
+</CodeGroup>
+
+## Import
+
+```typescript
+import { htmlAudio, formatDuration, type Track } from "$lib/html-audio";
+```
+
+## Core API
+
+### The `htmlAudio` singleton
+
+`htmlAudio` wraps a single `HTMLAudioElement` instance that is shared across your entire app. It is designed to be server-safe — all methods that touch the DOM check for a browser environment before executing, so importing `htmlAudio` in universal code will not throw during SSR.
+
+```typescript
+import { htmlAudio } from "$lib/html-audio";
+
+// Initialize on the client
+htmlAudio.init();
+
+// Load and play
+await htmlAudio.load({ url: "https://example.com/audio.mp3", startTime: 0 });
+await htmlAudio.play();
+```
+
+<Warning>
+Call `htmlAudio.init()` inside `onMount` or a `$effect` block. The underlying `HTMLAudioElement` must be created in the browser — calling `init()` on the server has no effect.
+</Warning>
+
+### Lifecycle
+
+| Method | Description |
+| --- | --- |
+| `init()` | Initialize the audio element on the client. Safe to call multiple times — subsequent calls are ignored. |
+| `cleanup()` | Pause playback, clear the source, and release the audio element. |
+
+### Playback
+
+| Method | Description |
+| --- | --- |
+| `load({ url, startTime?, isLiveStream? })` | Load an audio source and wait for it to be ready. Pass `isLiveStream: true` for live streams — this uses a 60-second timeout instead of 30 seconds and skips seeking. Returns `Promise<void>`. |
+| `play()` | Start or resume playback. Returns `Promise<void>` that resolves when the browser allows playback. |
+| `pause()` | Pause playback immediately. |
+| `setCurrentTime(time)` | Seek to a position in seconds. Clamped to valid range; ignored if metadata is unavailable. |
+| `setPlaybackRate(rate)` | Set playback speed between 0.25 and 2. Automatically disabled on live streams. |
+
+<Note>
+`play()` returns a promise that may be rejected by browser autoplay policies if there has been no recent user gesture. Trigger playback from a user interaction handler to avoid this.
+</Note>
+
+### Volume
+
+| Method | Description |
+| --- | --- |
+| `setVolume({ volume, fadeTime? })` | Set volume (0–1). If `fadeTime` is greater than 0 (in milliseconds), the change animates smoothly over that duration. |
+| `getVolume()` | Return the current volume as a number from 0–1. |
+| `setMuted(muted)` | Mute or unmute with a smooth 200ms fade. When unmuting, the previous volume level is restored automatically. |
+
+### State
+
+| Method | Description |
+| --- | --- |
+| `getDuration()` | Return the loaded source duration in seconds. Returns `0` if metadata is not yet available. |
+| `getCurrentTime()` | Return the current playback position in seconds. |
+| `isPaused()` | Return `true` if playback is currently paused. |
+| `getBufferedRanges()` | Return the underlying `TimeRanges` object, or `null` on the server. |
+| `getSource()` | Return the current source URL string. |
+| `getAudioElement()` | Return the raw `HTMLAudioElement`, or `null` when running on the server. |
+| `getPlaybackRate()` | Return the current playback rate. |
+
+### Events
+
+`htmlAudio` dispatches custom events through an internal `EventTarget`. Listen to these events without touching the raw `<audio>` element directly:
+
+| Event | Detail | Description |
+| --- | --- | --- |
+| `bufferingStart` | — | Fired when the audio element stalls and starts buffering |
+| `bufferingEnd` | — | Fired when buffering ends and audio is ready to play |
+| `playbackStarted` | — | Fired when audio begins playing after a load or resume |
+| `audioError` | — | Fired on a native audio error (up to 3 retries will occur first) |
+| `bufferUpdate` | `{ bufferedTime: number }` | Fired on each buffer progress update with the furthest buffered time in seconds |
+
+```typescript
+htmlAudio.addEventListener("bufferingStart", () => {
+  console.log("Buffering...");
+});
+
+htmlAudio.addEventListener("bufferingEnd", () => {
+  console.log("Ready to play");
+});
+
+htmlAudio.addEventListener("playbackStarted", () => {
+  console.log("Playing");
+});
+
+htmlAudio.addEventListener("audioError", () => {
+  console.error("Playback error");
+});
+
+htmlAudio.addEventListener("bufferUpdate", (e) => {
+  if (e instanceof CustomEvent) {
+    console.log("Buffered to:", e.detail.bufferedTime, "seconds");
+  }
+});
+```
+
+## Utilities
+
+### `formatDuration`
+
+Format a duration in seconds into a human-readable `M:SS` string. Handles non-finite input gracefully by returning `"0:00"`.
+
+```typescript
+import { formatDuration } from "$lib/html-audio";
+
+formatDuration(125);  // "2:05"
+formatDuration(3661); // "61:01"
+formatDuration(-1);   // "0:00"
+```
+
+### `htmlAudio.isLive`
+
+Detect whether a duration value indicates a live stream. Returns `true` for `NaN`, `Infinity`, and `-Infinity`.
+
+```typescript
+const duration = htmlAudio.getDuration();
+
+if (htmlAudio.isLive(duration)) {
+  // Hide the seek bar, disable fast-forward, etc.
+}
+```
+
+<Note>
+A duration of `0` means metadata has not loaded yet — it does not indicate a live stream. `isLive(0)` returns `false`.
+</Note>
+
+## Types
+
+### Track
+
+The `Track` interface is shared across all components and the audio store.
+
+| Property | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | `string \| number` | No | Unique identifier for the track |
+| `url` | `string` | Yes | URL of the audio file or stream |
+| `title` | `string` | No | Track title |
+| `artist` | `string` | No | Artist name |
+| `artwork` | `string` | No | Album artwork URL |
+| `images` | `string[]` | No | Additional image URLs |
+| `duration` | `number` | No | Track duration in seconds |
+| `album` | `string` | No | Album name |
+| `genre` | `string` | No | Genre |
+| `live` | `boolean` | No | Whether this is a live stream |
+| `[key: string]` | `unknown` | No | Any additional custom properties |
+
+## Examples
+
+### Basic playback
+
+Initialize `htmlAudio` on mount, then load and play a track:
+
+```svelte
+<script lang="ts">
+  import { htmlAudio } from "$lib/html-audio";
+  import { onMount } from "svelte";
+
+  onMount(() => {
+    htmlAudio.init();
+  });
+
+  async function loadAndPlay(url: string) {
+    try {
+      await htmlAudio.load({ url, startTime: 0 });
+      await htmlAudio.play();
+    } catch (error) {
+      console.error("Playback failed:", error);
+    }
+  }
+</script>
+
+<button onclick={() => loadAndPlay("/music.mp3")}>Play track</button>
+```
+
+### Volume fading
+
+Set volume immediately or animate it smoothly over a duration. Muting with `setMuted` remembers the previous level and restores it on unmute:
+
+```typescript
+import { htmlAudio } from "$lib/html-audio";
+
+// Immediate volume change
+htmlAudio.setVolume({ volume: 0.5 });
+
+// Smooth fade over 1 second
+htmlAudio.setVolume({ volume: 0.8, fadeTime: 1000 });
+
+// Mute with a smooth 200ms fade (volume is remembered internally)
+htmlAudio.setMuted(true);
+
+// Unmute — restores the previous volume with a 200ms fade
+htmlAudio.setMuted(false);
+```
+
+### Listening to progress
+
+Poll `getCurrentTime()` on an interval to display playback position without relying on store state:
+
+```svelte
+<script lang="ts">
+  import { htmlAudio, formatDuration } from "$lib/html-audio";
+  import { onMount } from "svelte";
+
+  let time = $state(0);
+
+  onMount(() => {
+    const interval = setInterval(() => {
+      time = htmlAudio.getCurrentTime();
+    }, 100);
+
+    return () => clearInterval(interval);
+  });
+</script>
+
+<span>{formatDuration(time)}</span>
+```
+
+## Notes
+
+- **Singleton pattern**: All method calls share the same `htmlAudio` instance. There is exactly one `HTMLAudioElement` per page.
+- **Server-safe**: Methods that access the DOM use internal `isClient()` guards. Calling `getVolume()` or `isPaused()` during SSR returns a safe default instead of throwing.
+- **Resilience**: Native HTML5 audio errors trigger an automatic reload and retry. `htmlAudio` retries up to 3 times before dispatching an `audioError` event.
+- **Volume cross-fades**: Smooth volume transitions use `setTimeout`-based animation at ~60fps intervals. Supplying `fadeTime` to `setVolume` is all you need.

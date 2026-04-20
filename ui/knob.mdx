@@ -1,0 +1,146 @@
+---
+title: "Knob: Rotary Control for Audio Parameters in Svelte"
+description: "A circular rotary control for audio parameters, filters, and effects. Supports a 270° arc indicator, pointer drag, keyboard navigation, and four sizes."
+---
+
+The `Knob` component is a pure Svelte rotary control built from plain HTML and SVG — no external primitives. Use it wherever you need to expose a continuous audio parameter: filter frequency, reverb mix, gain staging, oscillator tuning, or any other dial-style control. Value progress is shown through a 270° arc indicator, and the inner disc rotates with the value so the current position is always clear. Four size variants let it fit anywhere from compact effect panels to large master controls.
+
+## Installation
+
+<CodeGroup>
+
+```bash pnpm
+pnpm dlx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/knob.json
+```
+
+```bash npm
+npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/knob.json
+```
+
+```bash yarn
+npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/knob.json
+```
+
+```bash bun
+bun x shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/knob.json
+```
+
+</CodeGroup>
+
+## Usage
+
+### Basic knob
+
+```svelte
+<script lang="ts">
+  import { Knob } from "$lib/components/ui/audio/elements/knob/index.js";
+
+  let value = $state(50);
+</script>
+
+<Knob {value} onValueChange={(v) => (value = v)} />
+```
+
+### Knob with label
+
+Pass `label` to render a text label above the knob. This is useful when displaying multiple knobs side by side.
+
+```svelte
+<script lang="ts">
+  import { Knob } from "$lib/components/ui/audio/elements/knob/index.js";
+
+  let frequency = $state(1000);
+</script>
+
+<Knob
+  value={frequency}
+  min={20}
+  max={20000}
+  label="Frequency"
+  onValueChange={(v) => (frequency = v)}
+/>
+```
+
+### Disabled knob
+
+Set `disabled={true}` to prevent all interaction and render the knob at reduced opacity.
+
+```svelte
+<Knob value={50} disabled={true} label="Locked" />
+```
+
+## API reference
+
+### Knob props
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `value` | `number` | `50` | Current value (bindable). |
+| `min` | `number` | `0` | Minimum value. |
+| `max` | `number` | `100` | Maximum value. |
+| `step` | `number` | `1` | Step increment. |
+| `disabled` | `boolean` | `false` | Disables all interaction and adds reduced-opacity styling. |
+| `size` | `"sm" \| "default" \| "lg" \| "xl"` | `"default"` | Controls the knob diameter. |
+| `label` | `string` | — | Optional text label rendered above the knob. |
+| `onValueChange` | `(value: number) => void` | — | Fires on every change while the user interacts. |
+| `class` | `string` | — | Additional CSS classes on the root wrapper. |
+
+### Interaction
+
+- **Drag:** Click and drag vertically — drag up or right to increase, drag down or left to decrease. 200 px of travel covers the full value range.
+- **Keyboard:** `ArrowUp` / `ArrowRight` increases by one step; `ArrowDown` / `ArrowLeft` decreases by one step. `Home` jumps to `min`, `End` jumps to `max`.
+- **Arc indicator:** A 270° SVG arc shows the track (dimmed) and the active fill from `min` to the current value.
+- **Pointer indicator:** The inner disc rotates with the value, with a small dot marking the exact position.
+
+<Tip>
+  Use `bind:value` for two-way binding in Svelte, or pass `value` and `onValueChange` together for a controlled setup.
+</Tip>
+
+## Examples
+
+### Filter frequency knob
+
+Map the knob range to an audible frequency band for a filter cutoff control.
+
+```svelte
+<script lang="ts">
+  import { Knob } from "$lib/components/ui/audio/elements/knob/index.js";
+
+  let cutoff = $state(5000);
+  let resonance = $state(50);
+</script>
+
+<div class="flex items-center gap-8">
+  <Knob
+    value={cutoff}
+    min={20}
+    max={20000}
+    label="Cutoff"
+    onValueChange={(v) => (cutoff = v)}
+  />
+  <Knob
+    value={resonance}
+    label="Resonance"
+    onValueChange={(v) => (resonance = v)}
+  />
+</div>
+```
+
+### Effect wet/dry mix
+
+Use a single knob to blend between the dry signal and a wet effect return.
+
+```svelte
+<script lang="ts">
+  import { Knob } from "$lib/components/ui/audio/elements/knob/index.js";
+
+  let mix = $state(30);
+</script>
+
+<Knob
+  value={mix}
+  label="Mix"
+  onValueChange={(v) => (mix = v)}
+/>
+<p class="text-muted-foreground text-sm">Wet: {mix}%</p>
+```

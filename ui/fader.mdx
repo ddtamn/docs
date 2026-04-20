@@ -1,0 +1,182 @@
+---
+title: "Fader: Studio-Style Vertical and Horizontal Slider"
+description: "A studio-style drag-to-adjust fader for Svelte 5. Supports vertical and horizontal orientations, three size variants, and configurable thumb marks."
+---
+
+The `Fader` component is a drag-to-adjust fader built entirely from plain HTML elements and Tailwind — no external slider primitives. Ideal for volume controls, mixing boards, or any parameter you want to expose in a tactile, studio-style UI. It supports vertical and horizontal orientations, three size variants, and configurable thumb marks. Accessibility is handled by an invisible native `<input type="range">` stretched over the full component, so keyboard and pointer events work out of the box.
+
+## Installation
+
+<CodeGroup>
+
+```bash pnpm
+pnpm dlx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/fader.json
+```
+
+```bash npm
+npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/fader.json
+```
+
+```bash yarn
+npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/fader.json
+```
+
+```bash bun
+bun x shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/fader.json
+```
+
+</CodeGroup>
+
+## Usage
+
+### Basic vertical fader
+
+```svelte
+<script lang="ts">
+  import { Fader } from "$lib/components/ui/audio/elements/fader/index.js";
+
+  let value = $state(50);
+</script>
+
+<div class="h-48">
+  <Fader {value} onValueChange={(e) => (value = e)} />
+</div>
+```
+
+### Horizontal fader
+
+Pass `orientation="horizontal"` to render the fader along the horizontal axis.
+
+```svelte
+<script lang="ts">
+  import { Fader } from "$lib/components/ui/audio/elements/fader/index.js";
+
+  let value = $state(50);
+</script>
+
+<div class="flex w-full max-w-sm flex-col items-center gap-4">
+  <Fader orientation="horizontal" {value} onValueChange={(e) => (value = e)} />
+  <span class="text-muted-foreground text-sm tabular-nums">{value}</span>
+</div>
+```
+
+### Custom thumb marks
+
+Use `thumbMarks` to control the number of grip lines rendered on the thumb. Any positive integer is accepted.
+
+```svelte
+<script lang="ts">
+  import { Fader } from "$lib/components/ui/audio/elements/fader/index.js";
+
+  let value = $state(50);
+</script>
+
+<div class="flex h-48 items-center justify-center gap-8">
+  <Fader thumbMarks={1} {value} onValueChange={(e) => (value = e)} label="1" />
+  <Fader thumbMarks={3} {value} onValueChange={(e) => (value = e)} label="3" />
+  <Fader thumbMarks={5} {value} onValueChange={(e) => (value = e)} label="5" />
+</div>
+```
+
+### No thumb marks
+
+Pass `thumbMarks={false}` to hide the grip lines entirely for a cleaner look.
+
+```svelte
+<script lang="ts">
+  import { Fader } from "$lib/components/ui/audio/elements/fader/index.js";
+
+  let value = $state(50);
+</script>
+
+<div class="flex h-48 items-center justify-center">
+  <Fader thumbMarks={false} {value} onValueChange={(e) => (value = e)} />
+</div>
+```
+
+## API reference
+
+### Fader props
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `value` | `number` | `50` | Current value (0–100 by default). |
+| `min` | `number` | `0` | Minimum value. |
+| `max` | `number` | `100` | Maximum value. |
+| `step` | `number` | `1` | Step increment. |
+| `disabled` | `boolean` | `false` | Disables all interaction and adds reduced-opacity styling. |
+| `orientation` | `"horizontal" \| "vertical"` | `"vertical"` | Fader orientation. |
+| `size` | `"sm" \| "default" \| "lg"` | `"default"` | Controls the track width and thumb dimensions. |
+| `thumbMarks` | `number \| false` | `3` | Number of grip lines on the thumb, or `false` to hide them. |
+| `label` | `string` | — | Optional text label rendered above the fader. |
+| `onValueChange` | `(value: number) => void` | — | Fires on every input event as the user drags. |
+| `class` | `string` | — | Additional CSS classes on the root wrapper. |
+
+### Behavior
+
+- Interaction is handled by an invisible native `<input type="range">` stretched over the full component — keyboard and pointer events just work, fully accessible.
+- Vertical mode uses `writing-mode: vertical-lr` combined with `direction: rtl` on the hidden input so dragging upward increases the value, matching physical fader muscle memory.
+- The fill and thumb position are driven by derived state — no manual DOM manipulation is needed.
+
+<Tip>
+  Use `bind:value` for two-way binding in Svelte, or pass `value` and `onValueChange` together for a controlled setup.
+</Tip>
+
+## Examples
+
+### Volume control
+
+Wire the fader directly to `audioStore` for a store-driven volume control.
+
+```svelte
+<script lang="ts">
+  import { Fader } from "$lib/components/ui/audio/elements/fader/index.js";
+  import { audioStore } from "$lib/audio-store.svelte.js";
+
+  function handleVolumeChange(value: number) {
+    audioStore.setVolume({ volume: value / 100 });
+  }
+</script>
+
+<div class="flex h-48 items-center justify-center gap-4">
+  <Fader
+    label="Vol"
+    value={audioStore.volume * 100}
+    onValueChange={handleVolumeChange}
+  />
+</div>
+```
+
+### Multiple faders / mixing board
+
+Render one fader per channel and track each channel's value independently.
+
+```svelte
+<script lang="ts">
+  import { Fader } from "$lib/components/ui/audio/elements/fader/index.js";
+
+  let channels = $state([
+    { label: "Kick", value: 75 },
+    { label: "Snare", value: 60 },
+    { label: "Bass", value: 80 },
+    { label: "Vox", value: 90 },
+    { label: "FX", value: 40 },
+  ]);
+</script>
+
+<div class="flex h-56 items-end justify-center gap-4">
+  {#each channels as channel (channel.label)}
+    <div class="flex flex-col items-center gap-2">
+      <Fader
+        value={channel.value}
+        label={channel.label}
+        size="sm"
+        onValueChange={(e) => (channel.value = e)}
+      />
+      <span class="text-muted-foreground text-xs tabular-nums">
+        {channel.value}
+      </span>
+    </div>
+  {/each}
+</div>
+```

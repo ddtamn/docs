@@ -1,0 +1,116 @@
+---
+title: "Slider: Media Seek Bar with Buffer Progress Display"
+description: "A media seek bar showing playback progress and buffered content. Extends shadcn-svelte Slider with a bufferValue prop for audio and video player seek bars."
+---
+
+The `Slider` component extends the shadcn-svelte `Slider` (powered by Bits UI) to add a `bufferValue` prop — a secondary fill that shows how much audio has been buffered or loaded. This makes it ideal for seek bars in media players where you want users to see both where they are in the track and how much has preloaded. All standard slider functionality is preserved alongside the buffer display.
+
+## Installation
+
+<CodeGroup>
+
+```bash pnpm
+pnpm dlx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/slider.json
+```
+
+```bash npm
+npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/slider.json
+```
+
+```bash yarn
+npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/slider.json
+```
+
+```bash bun
+bun x shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/slider.json
+```
+
+</CodeGroup>
+
+## Usage
+
+### Basic slider
+
+```svelte
+<script lang="ts">
+  import { Slider } from "$lib/components/ui/slider/index.js";
+
+  let value = $state([33]);
+</script>
+
+<Slider value={[33]} max={100} step={1} onValueChange={(v) => (value = v)} />
+```
+
+### Slider with buffer
+
+Pass `bufferValue` to display a semi-transparent overlay behind the current value. The buffer fill sits between the current value and the buffered amount, matching the look of a browser media player seek bar.
+
+```svelte
+<script lang="ts">
+  import { Slider } from "$lib/components/ui/slider/index.js";
+
+  let value = $state([25]);
+  let buffered = $state(75);
+</script>
+
+<Slider
+  value={[25]}
+  bufferValue={buffered}
+  max={100}
+  step={1}
+  onValueChange={(v) => (value = v)}
+/>
+```
+
+## API reference
+
+### Slider props
+
+This component extends the Bits UI Slider and inherits all of its props. The following props are either added or are the most commonly used.
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `value` | `number[]` | — | The controlled value array of the slider. |
+| `defaultValue` | `number[]` | — | The uncontrolled default value array. |
+| `bufferValue` | `number` | `0` | Buffer indicator value (0–100). Displays a semi-transparent overlay behind the current value. |
+| `min` | `number` | `0` | Minimum value of the range. |
+| `max` | `number` | `100` | Maximum value of the range. |
+| `step` | `number` | `0.1` | Step interval. |
+| `disabled` | `boolean` | `false` | Prevents the user from interacting with the slider when `true`. |
+| `onValueChange` | `(value: number[]) => void` | — | Called whenever the value changes. |
+| `onValueCommit` | `(value: number[]) => void` | — | Called when the value is committed at the end of an interaction (e.g. pointer up). |
+| `class` | `string` | — | Additional CSS classes on the root element. |
+
+<Note>
+  For a full list of inherited props, see the [Bits UI Slider API reference](https://bits-ui.com/docs/components/slider).
+</Note>
+
+## Example
+
+### Seek bar wired to audioStore
+
+Connect the slider to `audioStore` to build a seek bar that shows both playback progress and buffered content.
+
+```svelte
+<script lang="ts">
+  import { Slider } from "$lib/components/ui/slider/index.js";
+  import { audioStore } from "$lib/audio-store.svelte.js";
+
+  function handleSeek(v: number[]) {
+    const seconds = (v[0] / 100) * audioStore.duration;
+    audioStore.seek(seconds);
+  }
+</script>
+
+<Slider
+  value={[audioStore.progress]}
+  bufferValue={audioStore.bufferedTime / audioStore.duration * 100}
+  max={100}
+  step={0.1}
+  onValueChange={handleSeek}
+/>
+```
+
+<Note>
+  This component is used internally by `AudioPlayer.SeekBar` to display playback progress and buffer status. If you are using the full `AudioPlayer`, you do not need to wire this manually.
+</Note>

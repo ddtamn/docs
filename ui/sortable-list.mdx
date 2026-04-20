@@ -1,0 +1,127 @@
+---
+title: "Sortable List: Drag-and-Drop Reordering for Svelte"
+description: "A drag-and-drop sortable list for Svelte 5. Used by AudioTrackList when sortable is enabled, and available standalone for building any reorderable list."
+---
+
+The `SortableList` component gives you drag-and-drop reordering for any list of items. It is used internally by `AudioTrackList` when `sortable` is enabled, but you can also use it standalone for any list in your application that needs reordering. Items are rendered using a `{#snippet item(row)}` block, giving you full control over the layout of each row. The component is built on top of `svelte-dnd-action` for accessible, smooth interactions.
+
+## Installation
+
+<CodeGroup>
+
+```bash pnpm
+pnpm dlx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/sortable-list.json
+```
+
+```bash npm
+npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/sortable-list.json
+```
+
+```bash yarn
+npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/sortable-list.json
+```
+
+```bash bun
+bun x shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/sortable-list.json
+```
+
+</CodeGroup>
+
+## Usage
+
+### Basic sortable list
+
+Pass your `items` array and an `onDrop` handler. Use the `{#snippet item(row)}` block to render each row. Each item in the array must have a unique `id` property.
+
+```svelte
+<script lang="ts">
+  import {
+    SortableList,
+    SortableItem,
+    SortableDragHandle,
+  } from "$lib/components/ui/sortable-list/index.js";
+
+  let items = $state([
+    { id: 1, title: "Track One", description: "Artist A" },
+    { id: 2, title: "Track Two", description: "Artist B" },
+    { id: 3, title: "Track Three", description: "Artist C" },
+  ]);
+</script>
+
+<div class="w-full max-w-sm">
+  <SortableList bind:items onDrop={(reordered) => (items = reordered)}>
+    {#snippet item(row)}
+      <SortableItem class="border-border bg-muted/40 rounded-md border p-3 text-sm">
+        <SortableDragHandle />
+        <div class="flex flex-col">
+          <span class="font-semibold">{row.title}</span>
+          <span class="text-muted-foreground text-xs">{row.description}</span>
+        </div>
+      </SortableItem>
+    {/snippet}
+  </SortableList>
+</div>
+```
+
+## API reference
+
+### SortableList props
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `items` | `{ id: string \| number; [key: string]: unknown }[]` | `[]` | Array of items to render. Each item must have a unique `id` property. |
+| `onDrop` | `(reordered: { id: string \| number }[]) => void` | — | Called after a drop with the new item order. |
+| `class` | `string` | — | Additional CSS classes for the list container. |
+
+The component uses a `{#snippet item(row)}` block to render each item. The `row` argument receives the full item object from your `items` array.
+
+### SortableItem props
+
+`SortableItem` is a wrapper for each row in the list.
+
+| Prop | Type | Description |
+|---|---|---|
+| `class` | `string` | Additional CSS classes on the inner `div` wrapper. |
+| `children` | `Snippet` | Content of the sortable item. |
+
+### SortableDragHandle
+
+`SortableDragHandle` is a pre-built drag handle button. Place it inside `SortableItem` to give users a designated grab target. It extends the shadcn-svelte `Button` component and overrides active states automatically to establish grip interactions.
+
+<Note>
+  Each item in your `items` array must have a unique `id` property (either `string` or `number`). The type requirement is checked internally by the component. Drag-to-reorder is automatically disabled when a filter is active to avoid unexpected queue mutations.
+</Note>
+
+## Example
+
+### Sortable track list
+
+Use `SortableList` to build a reorderable playlist, then apply the new order to your queue.
+
+```svelte
+<script lang="ts">
+  import {
+    SortableList,
+    SortableItem,
+    SortableDragHandle,
+  } from "$lib/components/ui/sortable-list/index.js";
+  import { audioStore } from "$lib/audio-store.svelte.js";
+
+  let tracks = $state(audioStore.queue);
+
+  function handleDrop(reordered: typeof tracks) {
+    tracks = reordered;
+    audioStore.setQueue(reordered);
+  }
+</script>
+
+<SortableList bind:items={tracks} onDrop={handleDrop}>
+  {#snippet item(track)}
+    <SortableItem class="border-border flex items-center gap-3 rounded-md border p-2 text-sm">
+      <SortableDragHandle />
+      <span class="font-medium">{track.title}</span>
+      <span class="text-muted-foreground ml-auto">{track.artist}</span>
+    </SortableItem>
+  {/snippet}
+</SortableList>
+```

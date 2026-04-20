@@ -1,0 +1,150 @@
+---
+title: "XY Pad: Control Two Audio Parameters Simultaneously"
+description: "A two-dimensional control for adjusting two audio parameters at once. Ideal for synthesizers, filter frequency and resonance, and effects processors."
+---
+
+The `XYPad` component is a two-dimensional control surface that lets you adjust two parameters at once by moving a single pointer across a pad. It is well-suited for synthesizer interfaces, filter controls pairing frequency with resonance, and effects where two interdependent parameters are exposed together. The pad renders a visual grid, crosshairs that follow the current X and Y position, and an optional value display overlay. The implementation is a pure Svelte component — no external dependencies required.
+
+## Installation
+
+<CodeGroup>
+
+```bash pnpm
+pnpm dlx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/xy-pad.json
+```
+
+```bash npm
+npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/xy-pad.json
+```
+
+```bash yarn
+npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/xy-pad.json
+```
+
+```bash bun
+bun x shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/xy-pad.json
+```
+
+</CodeGroup>
+
+## Usage
+
+### Basic XY pad
+
+```svelte
+<script lang="ts">
+  import { XYPad } from "$lib/components/ui/audio/elements/xy-pad/index.js";
+
+  let x = $state(50);
+  let y = $state(50);
+</script>
+
+<XYPad
+  value={{ x, y }}
+  onValueChange={({ x: newX, y: newY }) => {
+    x = newX;
+    y = newY;
+  }}
+/>
+```
+
+### XY pad with labels
+
+Pass `label` to render a descriptive text label above the pad. You can also use `formatValue` to customize how the current position is displayed in the overlay.
+
+```svelte
+<script lang="ts">
+  import { XYPad } from "$lib/components/ui/audio/elements/xy-pad/index.js";
+
+  let x = $state(50);
+  let y = $state(50);
+</script>
+
+<XYPad
+  value={{ x, y }}
+  label="Filter"
+  formatValue={({ x, y }) => `Freq: ${x.toFixed(0)}  Res: ${y.toFixed(0)}`}
+  onValueChange={({ x: newX, y: newY }) => {
+    x = newX;
+    y = newY;
+  }}
+/>
+```
+
+## API reference
+
+### XYPad props
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `value` | `{ x: number; y: number }` | — | Controlled value. |
+| `defaultValue` | `{ x: number; y: number }` | `{ x: 50, y: 50 }` | Uncontrolled default value. |
+| `size` | `"sm" \| "default" \| "lg" \| "xl"` | `"default"` | Size variant — controls the pad height. |
+| `disabled` | `boolean` | `false` | Disables interaction and lowers opacity. |
+| `label` | `string` | — | Optional text label rendered above the pad. |
+| `showValueDisplay` | `boolean` | `true` | Whether to show the value display overlay. |
+| `formatValue` | `(value: { x: number; y: number }) => string` | — | Custom formatter for the value overlay text. |
+| `onValueChange` | `({ x, y }: { x: number; y: number }) => void` | — | Called on every pointer move while interacting. |
+| `onValueCommit` | `({ x, y }: { x: number; y: number }) => void` | — | Called when the value is committed (on pointer release). |
+| `class` | `string` | — | Additional CSS classes on the root element. |
+
+### Interaction
+
+- **Pointer:** Click or touch anywhere on the pad and drag to set both X and Y simultaneously.
+- **Keyboard:** Arrow keys adjust the focused axis by 1 unit. Holding `Shift` while pressing an arrow key changes the step to 10 units.
+- **Convention:** `y = 100` maps to the top of the pad, following standard musical conventions where higher values sit at the top.
+- **Visual aids:** A background grid and crosshair lines always show the current position.
+
+<Note>
+  The `value` prop enables controlled mode. If you only want an uncontrolled default starting position, use `defaultValue` instead and omit `value`.
+</Note>
+
+## Examples
+
+### Filter frequency and resonance
+
+Map X to filter cutoff frequency and Y to resonance for a classic filter XY controller.
+
+```svelte
+<script lang="ts">
+  import { XYPad } from "$lib/components/ui/audio/elements/xy-pad/index.js";
+
+  let cutoff = $state(50);
+  let resonance = $state(50);
+</script>
+
+<XYPad
+  value={{ x: cutoff, y: resonance }}
+  label="Filter"
+  formatValue={({ x, y }) =>
+    `Cutoff: ${x.toFixed(0)}  Resonance: ${y.toFixed(0)}`}
+  onValueChange={({ x, y }) => {
+    cutoff = x;
+    resonance = y;
+  }}
+/>
+```
+
+### Distortion drive and tone
+
+Use the XY pad to control two related effect parameters at once — for example, the drive level on the X axis and a tone filter on the Y axis.
+
+```svelte
+<script lang="ts">
+  import { XYPad } from "$lib/components/ui/audio/elements/xy-pad/index.js";
+
+  let drive = $state(30);
+  let tone = $state(60);
+</script>
+
+<XYPad
+  value={{ x: drive, y: tone }}
+  label="Distortion"
+  size="lg"
+  formatValue={({ x, y }) => `Drive: ${x.toFixed(0)}  Tone: ${y.toFixed(0)}`}
+  onValueChange={({ x, y }) => {
+    drive = x;
+    tone = y;
+  }}
+/>
+```

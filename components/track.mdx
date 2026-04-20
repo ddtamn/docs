@@ -1,0 +1,239 @@
+---
+title: "Audio Track: Display, Filter, and Sort Track Lists"
+description: "AudioTrack and AudioTrackList render tracks in store mode or controlled mode, with text filtering, drag-to-reorder, grid layout, and per-track removal."
+---
+
+The Audio Track components display individual tracks and full track lists. They operate in two modes: **store mode** reads directly from the global `audioStore` queue, and **controlled mode** accepts an explicit list of tracks from outside the store. This makes them useful both for the main playback queue and for things like search results, playlists, or external catalogs. Both modes support filtering, configurable layouts, and optional drag-to-reorder.
+
+## Installation
+
+Install the components via the shadcn-svelte CLI:
+
+<CodeGroup>
+
+```bash pnpm
+pnpm dlx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/track.json
+```
+
+```bash npm
+npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/track.json
+```
+
+```bash yarn
+npx shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/track.json
+```
+
+```bash bun
+bun x shadcn-svelte@latest add https://svelte-audio-ui.vercel.app/r/track.json
+```
+
+</CodeGroup>
+
+Track components use icons from `@lucide/svelte`. Install it if you haven't already:
+
+<CodeGroup>
+
+```bash pnpm
+pnpm i @lucide/svelte
+```
+
+```bash npm
+npm i @lucide/svelte
+```
+
+```bash yarn
+yarn install @lucide/svelte
+```
+
+```bash bun
+bun install @lucide/svelte
+```
+
+</CodeGroup>
+
+## Usage
+
+Import all components from the track namespace:
+
+```svelte
+<script lang="ts">
+  import * as AudioTrack from "$lib/components/ui/audio/track/index.js";
+</script>
+```
+
+### AudioTrack — single track
+
+`AudioTrack.Root` renders a single track row. Use `trackId` to look up the track from the global queue (store mode), or `track` to provide the data directly (controlled mode).
+
+**Store mode:**
+
+```svelte
+<script lang="ts">
+  import * as AudioTrack from "$lib/components/ui/audio/track/index.js";
+  import { audioStore } from "$lib/audio-store.svelte.js";
+</script>
+
+{#if audioStore.queue[0]}
+  <AudioTrack.Root trackId={audioStore.queue[0].id} />
+{:else}
+  <p class="text-muted-foreground text-sm">No tracks in queue.</p>
+{/if}
+```
+
+**Controlled mode:**
+
+```svelte
+<!-- Load from queue by ID -->
+<AudioTrack.Root trackId={track.id} />
+
+<!-- Pass data explicitly -->
+<AudioTrack.Root track={customTrack} onclick={() => handlePlay(customTrack)} />
+```
+
+### AudioTrackList — list of tracks
+
+`AudioTrack.List` renders a full list. Omit `tracks` to use the global queue, or pass `tracks` for controlled mode.
+
+**Store mode:**
+
+```svelte
+<script lang="ts">
+  import * as AudioTrack from "$lib/components/ui/audio/track/index.js";
+</script>
+
+<AudioTrack.List
+  onTrackSelect={(index) => console.log("selected queue index", index)}
+/>
+```
+
+**Controlled mode:**
+
+```svelte
+<AudioTrack.List
+  tracks={searchResults}
+  onTrackSelect={handleSelect}
+/>
+```
+
+### Grid layout
+
+Pass `variant="grid"` to display tracks in a responsive two-column grid at larger breakpoints:
+
+```svelte
+<script lang="ts">
+  import * as AudioTrack from "$lib/components/ui/audio/track/index.js";
+</script>
+
+<AudioTrack.List variant="grid" />
+```
+
+### Sortable
+
+Enable drag-to-reorder with the `sortable` prop. Reordering updates the store queue directly when in store mode and no filter is active:
+
+```svelte
+<script lang="ts">
+  import * as AudioTrack from "$lib/components/ui/audio/track/index.js";
+</script>
+
+<AudioTrack.List
+  sortable
+  onTrackSelect={(index) => console.log("selected queue index", index)}
+/>
+```
+
+### Sortable grid
+
+Combine `sortable` with `variant="grid"` for a drag-to-reorder grid layout:
+
+```svelte
+<script lang="ts">
+  import * as AudioTrack from "$lib/components/ui/audio/track/index.js";
+</script>
+
+<AudioTrack.List sortable variant="grid" />
+```
+
+<Warning>
+  Reordering only updates `audioStore.queue` when the list is in store mode (`tracks` is not provided) **and** no filter is active (`filterQuery` and `filterFn` are both unset). Disable `sortable` while filtering to avoid unexpected behavior.
+</Warning>
+
+## API reference
+
+### AudioTrack
+
+#### Props
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `trackId` | `string \| number` | — | Load a track from the global queue by ID (store mode). Do not combine with `track`. |
+| `track` | `Track` | — | Render a provided track object (controlled mode). Do not combine with `trackId`. |
+| `index` | `number` | — | Display index. Shown as one-based when `showCover` is `false`. |
+| `onclick` | `() => void` | — | Click handler invoked when the track row is clicked. |
+| `onRemove` | `(trackId: string) => void` | — | Called when the remove button is clicked. Receives the track `id` as a string. |
+| `showRemove` | `boolean` | `false` | Whether to show the remove (✕) button. Always hidden for the currently playing track. |
+| `showPlayPause` | `boolean` | `true` | Show the play/pause control button on the track row. |
+| `showDragHandle` | `boolean` | `false` | Show a drag handle icon. Use together with a sortable list. |
+| `showCover` | `boolean` | `true` | Show album artwork. Falls back to a music icon when no artwork is available. |
+| `class` | `string` | — | Additional CSS classes on the track row element. |
+
+<Note>
+  Use either `trackId` (store mode) or `track` (controlled mode) — not both. Store mode requires `AudioProvider` to be mounted. Cover images are read from `track.artwork` or `track.images[0]`. Live tracks automatically show a **Live** badge and hide the duration; live detection uses `htmlAudio.isLive()`.
+</Note>
+
+---
+
+### AudioTrackList
+
+#### Props
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `tracks` | `Track[]` | — | Controlled list of tracks. When omitted, reads from `audioStore.queue` (store mode). |
+| `onTrackSelect` | `(index: number, track?: Track) => void` | — | Called when a track is selected. In store mode, `index` is the queue index; in controlled mode it refers to the `tracks` array. |
+| `onTrackRemove` | `(trackId: string) => void` | — | Remove handler called by the per-item remove button. |
+| `sortable` | `boolean` | `false` | Enable drag-and-drop reordering. Updates the store queue only in store mode when no filter is active. |
+| `showCover` | `boolean` | `true` | Show track cover images. |
+| `variant` | `"default" \| "grid"` | `"default"` | `"default"` renders a stacked list; `"grid"` renders a responsive two-column grid. |
+| `filterQuery` | `string` | — | Simple text filter that matches `title` or `artist` (case-insensitive). |
+| `filterFn` | `(track: Track) => boolean` | — | Custom filter function. When provided, `filterQuery` is ignored. |
+| `emptyLabel` | `string` | `"No tracks found"` | Heading shown in the empty state. |
+| `emptyDescription` | `string` | `"Try adding some tracks"` | Subtext shown below the empty state heading. |
+| `class` | `string` | — | Additional CSS classes on the list wrapper. |
+
+## Examples
+
+### Store mode — main queue
+
+```svelte
+<AudioTrack.List
+  sortable
+  onTrackSelect={(i) => console.log("play queue index", i)}
+/>
+```
+
+### Controlled mode — external list
+
+```svelte
+<AudioTrack.List
+  tracks={searchResults}
+  variant="grid"
+  onTrackSelect={(index, track) => addToQueue(track)}
+/>
+```
+
+### Filtering
+
+```svelte
+<!-- Simple text filter -->
+<AudioTrack.List filterQuery="jazz" />
+
+<!-- Custom filter function -->
+<AudioTrack.List filterFn={(t) => t.genre === "jazz"} />
+```
+
+### With removal
+
+```svelte
+<AudioTrack.List onTrackRemove={(id) => removeFromQueue(id)} />
+```
