@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "name": "Svelte Audio UI",
-  "theme": "willow",
+  "theme": "maple",
   "favicon": "https://media.brand.dev/64415e4d-de99-4aaf-9b43-90ccd16f9af2.png",
   "colors": {
     "primary": "#ec4c24",
